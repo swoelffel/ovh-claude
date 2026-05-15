@@ -2,11 +2,11 @@ import json
 import sys
 import shutil
 from pathlib import Path
+from importlib.resources import files
 import ovh
 from ovh_claude.credentials import load_credentials, CredentialsError
 
-_PKG_ROOT = Path(__file__).parent.parent.parent
-SKILLS_SOURCE = _PKG_ROOT / "skills" / "ovh-api.md"
+SKILLS_SOURCE = files("ovh_claude.data").joinpath("ovh-api.md")
 SKILLS_DEST_DIR = Path.home() / ".claude" / "skills"
 
 ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE"}

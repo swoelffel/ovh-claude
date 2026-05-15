@@ -18,4 +18,4 @@ ovh-claude = "ovh_claude.cli:main_claude"
 where = ["src"]
 
 [tool.setuptools.package-data]
-ovh_claude = ["../../skills/ovh-api.md"]
+ovh_claude = ["data/ovh-api.md"]
