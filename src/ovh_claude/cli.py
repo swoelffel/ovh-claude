@@ -106,11 +106,80 @@ def main_proxy():
 
 def main_claude():
     args = sys.argv[1:]
-    if not args or args[0] != "install-skill":
-        print("Usage: ovh-claude install-skill", file=sys.stderr)
+    if not args:
+        print("Usage: ovh-claude <install-skill|doctor>", file=sys.stderr)
         sys.exit(1)
 
+    subcommand = args[0]
+    if subcommand == "install-skill":
+        _install_skill()
+        return
+    if subcommand == "doctor":
+        main_doctor()
+        return
+
+    print(f"Unknown subcommand: {subcommand}", file=sys.stderr)
+    print("Available subcommands: install-skill, doctor", file=sys.stderr)
+    sys.exit(1)
+
+
+def _install_skill():
     SKILLS_DEST_DIR.mkdir(parents=True, exist_ok=True)
     dest = SKILLS_DEST_DIR / "ovh-api.md"
     shutil.copy2(SKILLS_SOURCE, dest)
     print(f"Skill installed: {dest}")
+
+
+def main_doctor():
+    print("ovh-claude doctor")
+    print("─────────────────")
+
+    checks = [
+        ("python", _check_python_version, ()),
+        ("credentials_file", _check_credentials_file, ()),
+        ("credentials_keys", _check_credentials_keys, ("credentials_file",)),
+        ("skill", _check_skill_installed, ()),
+        ("api", _check_api_reachable, ("credentials_file", "credentials_keys")),
+    ]
+
+    failures = 0
+    results: dict[str, str] = {}
+    for name, fn, deps in checks:
+        if any(results.get(d) != "OK" for d in deps):
+            skipped_dep = next((d for d in deps if results.get(d) != "OK"), deps[0])
+            print(f"[ ] {_label_for(name)} (skipped — {_skipped_reason(skipped_dep)})")
+            results[name] = "SKIPPED"
+            continue
+        status, message = fn()
+        results[name] = status
+        marker = "✓" if status == "OK" else "✗"
+        label = _label_for(name)
+        if status == "OK":
+            print(f"[{marker}] {message}")
+        else:
+            print(f"[{marker}] {label}: {message}")
+            failures += 1
+
+    print()
+    if failures == 0:
+        print("All checks passed.")
+    else:
+        print(f"{failures} check{'s' if failures > 1 else ''} failed.")
+        sys.exit(1)
+
+
+def _label_for(name: str) -> str:
+    return {
+        "python": "Python version",
+        "credentials_file": "Credentials file",
+        "credentials_keys": "Required keys",
+        "skill": "Skill installed",
+        "api": "OVH API reachable",
+    }[name]
+
+
+def _skipped_reason(dep: str) -> str:
+    return {
+        "credentials_file": "credentials missing",
+        "credentials_keys": "credentials invalid",
+    }.get(dep, "prerequisite failed")

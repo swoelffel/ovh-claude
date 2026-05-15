@@ -13,7 +13,10 @@ def load_credentials() -> dict:
     if not CREDENTIALS_PATH.exists():
         raise CredentialsError(f"Credentials file not found: {CREDENTIALS_PATH}\nCreate one at https://api.ovh.com/createToken/")
     parser = configparser.ConfigParser()
-    parser.read(CREDENTIALS_PATH)
+    try:
+        parser.read(CREDENTIALS_PATH)
+    except configparser.Error as e:
+        raise CredentialsError(f"Credentials file parse error: {e}") from e
     section = parser["default"] if "default" in parser else {}
     missing = [k for k in REQUIRED_KEYS if k not in section]
     if missing:

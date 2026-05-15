@@ -136,7 +136,7 @@ def test_check_credentials_keys_missing(tmp_path):
     assert "application_secret" in message
     assert "consumer_key" in message
 
-from ovh_claude.cli import _check_skill_installed, _check_api_reachable
+from ovh_claude.cli import _check_skill_installed, _check_api_reachable, main_doctor
 
 def test_check_skill_installed_ok(tmp_path):
     skill_path = tmp_path / "ovh-api.md"
@@ -178,3 +178,66 @@ def test_check_api_reachable_credentials_error():
         status, message = _check_api_reachable()
     assert status == "FAIL"
     assert "Credentials" in message
+
+def test_main_doctor_all_pass(capsys):
+    with patch("ovh_claude.cli._check_python_version", return_value=("OK", "Python 3.12.1 (≥ 3.10 required)")), \
+         patch("ovh_claude.cli._check_credentials_file", return_value=("OK", "Credentials file: /tmp/c")), \
+         patch("ovh_claude.cli._check_credentials_keys", return_value=("OK", "Required keys: endpoint, application_key, application_secret, consumer_key")), \
+         patch("ovh_claude.cli._check_skill_installed", return_value=("OK", "Skill installed: /tmp/s")), \
+         patch("ovh_claude.cli._check_api_reachable", return_value=("OK", "OVH API reachable (GET /me) → nichandle: ab123-ovh")), \
+         patch("sys.argv", ["ovh-claude", "doctor"]):
+        main_doctor()
+    out = capsys.readouterr().out
+    assert "[✓] Python" in out
+    assert "[✓] Credentials file" in out
+    assert "[✓] Required keys" in out
+    assert "[✓] Skill installed" in out
+    assert "[✓] OVH API reachable" in out
+    assert "All checks passed" in out
+
+def test_main_doctor_credentials_missing_short_circuits(capsys):
+    with patch("ovh_claude.cli._check_python_version", return_value=("OK", "Python 3.12.1 (≥ 3.10 required)")), \
+         patch("ovh_claude.cli._check_credentials_file", return_value=("FAIL", "Credentials file: /tmp/c (not found)\n    → Create one at https://api.ovh.com/createToken/")), \
+         patch("ovh_claude.cli._check_credentials_keys") as mock_keys, \
+         patch("ovh_claude.cli._check_skill_installed", return_value=("OK", "Skill installed: /tmp/s")), \
+         patch("ovh_claude.cli._check_api_reachable") as mock_api, \
+         patch("sys.argv", ["ovh-claude", "doctor"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main_doctor()
+    assert exc_info.value.code == 1
+    out = capsys.readouterr().out
+    assert "[✗] Credentials file" in out
+    assert "[ ] Required keys (skipped" in out
+    assert "[ ] OVH API reachable (skipped" in out
+    assert "1 check failed" in out
+    mock_keys.assert_not_called()
+    mock_api.assert_not_called()
+
+def test_main_doctor_api_fail_exits_nonzero(capsys):
+    with patch("ovh_claude.cli._check_python_version", return_value=("OK", "Python 3.12.1 (≥ 3.10 required)")), \
+         patch("ovh_claude.cli._check_credentials_file", return_value=("OK", "Credentials file: /tmp/c")), \
+         patch("ovh_claude.cli._check_credentials_keys", return_value=("OK", "Required keys: endpoint, application_key, application_secret, consumer_key")), \
+         patch("ovh_claude.cli._check_skill_installed", return_value=("OK", "Skill installed: /tmp/s")), \
+         patch("ovh_claude.cli._check_api_reachable", return_value=("FAIL", "OVH API error: 403 Forbidden")), \
+         patch("sys.argv", ["ovh-claude", "doctor"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main_doctor()
+    assert exc_info.value.code == 1
+    out = capsys.readouterr().out
+    assert "[✗] OVH API reachable" in out
+    assert "1 check failed" in out
+
+def test_main_claude_dispatches_doctor():
+    with patch("ovh_claude.cli.main_doctor") as mock_doctor, \
+         patch("sys.argv", ["ovh-claude", "doctor"]):
+        main_claude()
+    mock_doctor.assert_called_once()
+
+def test_main_claude_unknown_subcommand_lists_known(capsys):
+    with patch("sys.argv", ["ovh-claude", "unknown"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main_claude()
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "install-skill" in err
+    assert "doctor" in err
