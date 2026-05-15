@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ovh-claude"
+version = "0.1.0"
+description = "Secure OVH API proxy + Claude Code skill for AI agents"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["ovh>=1.0.0"]
+
+[project.scripts]
+ovh-api = "ovh_claude.cli:main_proxy"
+ovh-claude = "ovh_claude.cli:main_claude"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ovh_claude = ["../../skills/ovh-api.md"]
