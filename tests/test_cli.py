@@ -3,7 +3,7 @@ import json
 import sys
 import pytest
 from unittest.mock import patch, MagicMock
-from ovh_claude.cli import main_proxy
+from ovh_claude.cli import main_proxy, main_claude
 
 FAKE_CREDS = {
     "endpoint": "ovh-eu",
@@ -51,4 +51,32 @@ def test_invalid_method_exits_nonzero(capsys):
          patch("sys.argv", ["ovh-api", "PATCH", "/vps"]):
         with pytest.raises(SystemExit) as exc_info:
             main_proxy()
+    assert exc_info.value.code == 1
+
+def test_install_skill_copies_file(tmp_path, capsys):
+    skills_dir = tmp_path / ".claude" / "skills"
+    fake_skill = tmp_path / "ovh-api.md"
+    fake_skill.write_text("# OVH skill")
+    with patch("ovh_claude.cli.SKILLS_SOURCE", fake_skill), \
+         patch("ovh_claude.cli.SKILLS_DEST_DIR", skills_dir), \
+         patch("sys.argv", ["ovh-claude", "install-skill"]):
+        main_claude()
+    assert (skills_dir / "ovh-api.md").read_text() == "# OVH skill"
+    out = capsys.readouterr().out
+    assert "installed" in out.lower()
+
+def test_install_skill_creates_dir(tmp_path, capsys):
+    skills_dir = tmp_path / "nonexistent" / "skills"
+    fake_skill = tmp_path / "ovh-api.md"
+    fake_skill.write_text("# OVH skill")
+    with patch("ovh_claude.cli.SKILLS_SOURCE", fake_skill), \
+         patch("ovh_claude.cli.SKILLS_DEST_DIR", skills_dir), \
+         patch("sys.argv", ["ovh-claude", "install-skill"]):
+        main_claude()
+    assert (skills_dir / "ovh-api.md").exists()
+
+def test_install_skill_unknown_subcommand_exits(capsys):
+    with patch("sys.argv", ["ovh-claude", "unknown"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main_claude()
     assert exc_info.value.code == 1
