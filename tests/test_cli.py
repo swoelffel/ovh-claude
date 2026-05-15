@@ -80,3 +80,17 @@ def test_install_skill_unknown_subcommand_exits(capsys):
         with pytest.raises(SystemExit) as exc_info:
             main_claude()
     assert exc_info.value.code == 1
+
+from ovh_claude.cli import _check_python_version
+
+def test_check_python_version_ok():
+    with patch("ovh_claude.cli.sys.version_info", (3, 12, 1)):
+        status, message = _check_python_version()
+    assert status == "OK"
+    assert "3.12.1" in message
+
+def test_check_python_version_too_old():
+    with patch("ovh_claude.cli.sys.version_info", (3, 9, 0)):
+        status, message = _check_python_version()
+    assert status == "FAIL"
+    assert "3.10" in message

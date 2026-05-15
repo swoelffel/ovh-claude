@@ -12,6 +12,14 @@ SKILLS_DEST_DIR = Path.home() / ".claude" / "skills"
 ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE"}
 
 
+def _check_python_version() -> tuple[str, str]:
+    version = sys.version_info
+    version_str = f"{version[0]}.{version[1]}.{version[2]}"
+    if (version[0], version[1]) < (3, 10):
+        return "FAIL", f"Python {version_str} (≥ 3.10 required)"
+    return "OK", f"Python {version_str} (≥ 3.10 required)"
+
+
 def main_proxy():
     args = sys.argv[1:]
     if len(args) < 2:
