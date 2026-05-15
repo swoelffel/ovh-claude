@@ -6,14 +6,20 @@ Credentials stay in `~/.config/ovh/credentials` — they never appear in the LLM
 
 ## Install
 
+Install directly from GitHub — no clone needed:
+
 ```bash
-pipx install ovh-claude
+pipx install git+https://github.com/swoelffel/ovh-claude.git
 ovh-claude install-skill
 ```
 
+> Not yet published on PyPI. Once it is, `pipx install ovh-claude` will work.
+
 ## Prerequisites
 
-Create `~/.config/ovh/credentials`:
+You need [`pipx`](https://pipx.pypa.io/) (`brew install pipx` or `python -m pip install --user pipx`).
+
+Then create `~/.config/ovh/credentials`:
 
 ```ini
 [default]
