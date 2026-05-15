@@ -81,7 +81,7 @@ def test_install_skill_unknown_subcommand_exits(capsys):
             main_claude()
     assert exc_info.value.code == 1
 
-from ovh_claude.cli import _check_python_version
+from ovh_claude.cli import _check_python_version, _check_credentials_file, _check_credentials_keys
 
 def test_check_python_version_ok():
     with patch("ovh_claude.cli.sys.version_info", (3, 12, 1)):
@@ -94,3 +94,43 @@ def test_check_python_version_too_old():
         status, message = _check_python_version()
     assert status == "FAIL"
     assert "3.10" in message
+
+def test_check_credentials_file_present(tmp_path):
+    creds = tmp_path / "credentials"
+    creds.write_text("[default]\nendpoint=ovh-eu\n")
+    with patch("ovh_claude.cli.credentials.CREDENTIALS_PATH", creds):
+        status, message = _check_credentials_file()
+    assert status == "OK"
+    assert str(creds) in message
+
+def test_check_credentials_file_missing(tmp_path):
+    missing = tmp_path / "absent"
+    with patch("ovh_claude.cli.credentials.CREDENTIALS_PATH", missing):
+        status, message = _check_credentials_file()
+    assert status == "FAIL"
+    assert "not found" in message
+    assert "createToken" in message
+
+def test_check_credentials_keys_complete(tmp_path):
+    creds = tmp_path / "credentials"
+    creds.write_text(
+        "[default]\n"
+        "endpoint=ovh-eu\n"
+        "application_key=K\n"
+        "application_secret=S\n"
+        "consumer_key=C\n"
+    )
+    with patch("ovh_claude.cli.credentials.CREDENTIALS_PATH", creds):
+        status, message = _check_credentials_keys()
+    assert status == "OK"
+    assert "endpoint" in message
+    assert "application_key" in message
+
+def test_check_credentials_keys_missing(tmp_path):
+    creds = tmp_path / "credentials"
+    creds.write_text("[default]\nendpoint=ovh-eu\napplication_key=K\n")
+    with patch("ovh_claude.cli.credentials.CREDENTIALS_PATH", creds):
+        status, message = _check_credentials_keys()
+    assert status == "FAIL"
+    assert "application_secret" in message
+    assert "consumer_key" in message

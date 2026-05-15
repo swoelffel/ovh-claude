@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from importlib.resources import files
 import ovh
+from ovh_claude import credentials
 from ovh_claude.credentials import load_credentials, CredentialsError
 
 SKILLS_SOURCE = files("ovh_claude.data").joinpath("ovh-api.md")
@@ -18,6 +19,25 @@ def _check_python_version() -> tuple[str, str]:
     if (version[0], version[1]) < (3, 10):
         return "FAIL", f"Python {version_str} (≥ 3.10 required)"
     return "OK", f"Python {version_str} (≥ 3.10 required)"
+
+
+def _check_credentials_file() -> tuple[str, str]:
+    path = credentials.CREDENTIALS_PATH
+    if not path.exists():
+        return "FAIL", f"Credentials file: {path} (not found)\n    → Create one at https://api.ovh.com/createToken/"
+    return "OK", f"Credentials file: {path}"
+
+
+def _check_credentials_keys() -> tuple[str, str]:
+    try:
+        loaded = credentials.load_credentials()
+    except credentials.CredentialsError as e:
+        msg = str(e)
+        if "Missing keys" in msg:
+            missing_part = msg.split(": ", 2)[-1]
+            return "FAIL", f"Required keys missing: {missing_part}"
+        return "FAIL", f"Credentials error: {msg.splitlines()[0]}"
+    return "OK", f"Required keys: {', '.join(loaded.keys())}"
 
 
 def main_proxy():
