@@ -59,13 +59,13 @@ def _check_api_reachable() -> tuple[str, str]:
             application_secret=creds["application_secret"],
             consumer_key=creds["consumer_key"],
         )
-        me = client.get("/me")
+        cred = client.get("/auth/currentCredential")
     except ovh.exceptions.APIError as e:
         return "FAIL", f"OVH API error: {e}"
     except Exception as e:
         return "FAIL", f"OVH API unreachable: {type(e).__name__}"
-    nichandle = me.get("nichandle", "<unknown>")
-    return "OK", f"OVH API reachable (GET /me) → nichandle: {nichandle}"
+    status = cred.get("status", "<unknown>")
+    return "OK", f"OVH API reachable (GET /auth/currentCredential) → status: {status}"
 
 
 def main_proxy():

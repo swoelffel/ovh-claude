@@ -154,13 +154,14 @@ def test_check_skill_installed_missing(tmp_path):
 
 def test_check_api_reachable_ok():
     mock_client = MagicMock()
-    mock_client.get.return_value = {"nichandle": "ab123-ovh", "email": "secret@x.com"}
+    mock_client.get.return_value = {"status": "validated", "credentialId": 5678}
     with patch("ovh_claude.cli.load_credentials", return_value=FAKE_CREDS), \
          patch("ovh_claude.cli.ovh.Client", return_value=mock_client):
         status, message = _check_api_reachable()
     assert status == "OK"
-    assert "ab123-ovh" in message
-    assert "secret@x.com" not in message
+    assert "validated" in message
+    assert "currentCredential" in message
+    mock_client.get.assert_called_once_with("/auth/currentCredential")
 
 def test_check_api_reachable_api_error():
     import ovh
@@ -184,7 +185,7 @@ def test_main_doctor_all_pass(capsys):
          patch("ovh_claude.cli._check_credentials_file", return_value=("OK", "Credentials file: /tmp/c")), \
          patch("ovh_claude.cli._check_credentials_keys", return_value=("OK", "Required keys: endpoint, application_key, application_secret, consumer_key")), \
          patch("ovh_claude.cli._check_skill_installed", return_value=("OK", "Skill installed: /tmp/s")), \
-         patch("ovh_claude.cli._check_api_reachable", return_value=("OK", "OVH API reachable (GET /me) → nichandle: ab123-ovh")), \
+         patch("ovh_claude.cli._check_api_reachable", return_value=("OK", "OVH API reachable (GET /auth/currentCredential) → status: validated")), \
          patch("sys.argv", ["ovh-claude", "doctor"]):
         main_doctor()
     out = capsys.readouterr().out
