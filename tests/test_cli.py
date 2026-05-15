@@ -4,6 +4,7 @@ import sys
 import pytest
 from unittest.mock import patch, MagicMock
 from ovh_claude.cli import main_proxy, main_claude
+from ovh_claude.credentials import CredentialsError
 
 FAKE_CREDS = {
     "endpoint": "ovh-eu",
@@ -134,3 +135,46 @@ def test_check_credentials_keys_missing(tmp_path):
     assert status == "FAIL"
     assert "application_secret" in message
     assert "consumer_key" in message
+
+from ovh_claude.cli import _check_skill_installed, _check_api_reachable
+
+def test_check_skill_installed_ok(tmp_path):
+    skill_path = tmp_path / "ovh-api.md"
+    skill_path.write_text("# skill")
+    with patch("ovh_claude.cli.SKILLS_DEST_DIR", tmp_path):
+        status, message = _check_skill_installed()
+    assert status == "OK"
+    assert str(skill_path) in message
+
+def test_check_skill_installed_missing(tmp_path):
+    with patch("ovh_claude.cli.SKILLS_DEST_DIR", tmp_path):
+        status, message = _check_skill_installed()
+    assert status == "FAIL"
+    assert "ovh-claude install-skill" in message
+
+def test_check_api_reachable_ok():
+    mock_client = MagicMock()
+    mock_client.get.return_value = {"nichandle": "ab123-ovh", "email": "secret@x.com"}
+    with patch("ovh_claude.cli.load_credentials", return_value=FAKE_CREDS), \
+         patch("ovh_claude.cli.ovh.Client", return_value=mock_client):
+        status, message = _check_api_reachable()
+    assert status == "OK"
+    assert "ab123-ovh" in message
+    assert "secret@x.com" not in message
+
+def test_check_api_reachable_api_error():
+    import ovh
+    mock_client = MagicMock()
+    mock_client.get.side_effect = ovh.exceptions.APIError("Forbidden")
+    with patch("ovh_claude.cli.load_credentials", return_value=FAKE_CREDS), \
+         patch("ovh_claude.cli.ovh.Client", return_value=mock_client):
+        status, message = _check_api_reachable()
+    assert status == "FAIL"
+    assert "Forbidden" in message
+    assert FAKE_CREDS["application_secret"] not in message
+
+def test_check_api_reachable_credentials_error():
+    with patch("ovh_claude.cli.load_credentials", side_effect=CredentialsError("Credentials file not found")):
+        status, message = _check_api_reachable()
+    assert status == "FAIL"
+    assert "Credentials" in message

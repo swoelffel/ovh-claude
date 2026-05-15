@@ -40,6 +40,34 @@ def _check_credentials_keys() -> tuple[str, str]:
     return "OK", f"Required keys: {', '.join(loaded.keys())}"
 
 
+def _check_skill_installed() -> tuple[str, str]:
+    dest = SKILLS_DEST_DIR / "ovh-api.md"
+    if not dest.exists():
+        return "FAIL", f"Skill not installed at {dest}\n    → Run: ovh-claude install-skill"
+    return "OK", f"Skill installed: {dest}"
+
+
+def _check_api_reachable() -> tuple[str, str]:
+    try:
+        creds = load_credentials()
+    except CredentialsError as e:
+        return "FAIL", f"Credentials error: {str(e).splitlines()[0]}"
+    try:
+        client = ovh.Client(
+            endpoint=creds["endpoint"],
+            application_key=creds["application_key"],
+            application_secret=creds["application_secret"],
+            consumer_key=creds["consumer_key"],
+        )
+        me = client.get("/me")
+    except ovh.exceptions.APIError as e:
+        return "FAIL", f"OVH API error: {e}"
+    except Exception as e:
+        return "FAIL", f"OVH API unreachable: {type(e).__name__}"
+    nichandle = me.get("nichandle", "<unknown>")
+    return "OK", f"OVH API reachable (GET /me) → nichandle: {nichandle}"
+
+
 def main_proxy():
     args = sys.argv[1:]
     if len(args) < 2:
