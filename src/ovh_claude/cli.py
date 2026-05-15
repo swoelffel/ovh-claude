@@ -33,10 +33,14 @@ def _check_credentials_keys() -> tuple[str, str]:
         loaded = credentials.load_credentials()
     except credentials.CredentialsError as e:
         msg = str(e)
+        lines = msg.splitlines()
+        first = lines[0]
+        rest = "\n    ".join(lines[1:]) if len(lines) > 1 else ""
+        detail = (f"{first}\n    {rest}") if rest else first
         if "Missing keys" in msg:
-            missing_part = msg.split(": ", 2)[-1]
-            return "FAIL", f"Required keys missing: {missing_part}"
-        return "FAIL", f"Credentials error: {msg.splitlines()[0]}"
+            missing_part = first.split(": ", 2)[-1]
+            return "FAIL", f"Required keys missing: {missing_part}\n    {rest}" if rest else f"Required keys missing: {missing_part}"
+        return "FAIL", f"Credentials error: {detail}"
     return "OK", f"Required keys: {', '.join(loaded.keys())}"
 
 
