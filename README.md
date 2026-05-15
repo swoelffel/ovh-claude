@@ -1,5 +1,10 @@
 # ovh-claude
 
+![CI](https://github.com/swoelffel/ovh-claude/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-alpha-orange)
+
 Let Claude Code manage OVHcloud resources safely — API credentials stay local and never enter the LLM context.
 
 - Credentials stay on your machine
@@ -51,7 +56,7 @@ Generate tokens at https://api.ovh.com/createToken/ with the rights you need.
 | Platform | Status | Notes |
 |----------|--------|-------|
 | macOS | ✅ Supported (tested) | Tested with pipx |
-| Linux | 🟢 Should work, not yet tested | Standard Python + pipx — feedback welcome |
+| Linux | ✅ Supported (tested via CI on Ubuntu) | Verified on Python 3.10/3.11/3.12 in CI |
 | WSL (Ubuntu/Debian) | 🟢 Should work, not yet tested | Recommended path for Claude Code on Windows |
 | Windows (PowerShell native) | ⚠️ Best-effort, untested | Credentials path: `%USERPROFILE%\.config\ovh\credentials`. JSON body in PowerShell: use single-quote outside, double-quote inside, or read from file. PRs welcome. |
 
