@@ -20,8 +20,8 @@ When an AI agent (Claude Code, an autonomous SRE bot, a multi-agent pipeline) ne
 ## Quickstart
 
 ```bash
-# 1. Install (under 1 min)
-pipx install git+https://github.com/swoelffel/ovh-claude.git
+# 1. Install from PyPI (under 1 min)
+pipx install ovh-claude
 
 # 2. Register the Claude Code skill
 ovh-claude install-skill
@@ -37,9 +37,24 @@ If `doctor` passes, you're done. Total: under 5 minutes including token creation
 
 ## Prerequisites
 
-You need [`pipx`](https://pipx.pypa.io/) (`brew install pipx` or `python -m pip install --user pipx`).
+### Install pipx
 
-Create `~/.config/ovh/credentials`:
+[`pipx`](https://pipx.pypa.io/) lets you install Python CLI tools in isolated environments.
+
+| Platform | Command |
+|----------|---------|
+| macOS (Homebrew) | `brew install pipx && pipx ensurepath` |
+| Debian / Ubuntu | `sudo apt install pipx && pipx ensurepath` |
+| Fedora | `sudo dnf install pipx && pipx ensurepath` |
+| Arch / Manjaro | `sudo pacman -S python-pipx && pipx ensurepath` |
+| Windows (Scoop) | `scoop install pipx && pipx ensurepath` |
+| Any platform (fallback) | `python -m pip install --user pipx && python -m pipx ensurepath` |
+
+After install, open a new shell (or run `source ~/.zshrc` / `source ~/.bashrc`) so the PATH is refreshed.
+
+### Create the OVH credentials file
+
+Create `~/.config/ovh/credentials` (Windows: `%USERPROFILE%\.config\ovh\credentials`):
 
 ```ini
 [default]
